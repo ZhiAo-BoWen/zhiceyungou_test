@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ app_name }} · {{ app_tagline }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+  <script>
+    (function () {
+      var t = localStorage.getItem('app-theme');
+      document.documentElement.setAttribute('data-theme', (t === 'dark' || t === 'light') ? t : 'light');
+    })();
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- 左侧导航栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-mark"><i data-lucide="{{ app_icon }}" class="icon"></i></span>
+          <span class="logo-text">
+            <span class="logo-name-row">
+              <span class="logo-name">{{ app_name }}</span>
+              <span class="logo-badge">{{ app_badge }}</span>
+            </span>
+            <span class="logo-sub">{{ app_tagline }}</span>
+          </span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="home">
+          <span class="nav-icon"><i data-lucide="square-pen" class="icon"></i></span> 新建任务
+        </button>
+        <button class="nav-item" data-view="history">
+          <span class="nav-icon"><i data-lucide="history" class="icon"></i></span> 任务历史
+        </button>
+        <button class="nav-item" data-view="intro">
+          <span class="nav-icon"><i data-lucide="info" class="icon"></i></span> 系统介绍
+        </button>
+      </nav>
+      <div class="task-history" id="taskHistoryList">
+        <div class="history-title">最近任务</div>
+        <div class="history-items" id="historyItems"></div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-footer-actions">
+          <button type="button" class="footer-action-btn" id="healthCheckBtn" title="检测模型连通性">
+            <span class="footer-action-icon"><i data-lucide="activity" class="icon"></i></span>
+            <span>健康检查</span>
+          </button>
+          <button type="button" class="footer-action-btn" id="apiKeyBtn" title="配置 API Key">
+            <span class="footer-action-icon"><i data-lucide="key-round" class="icon"></i></span>
+            <span>API Key</span>
+          </button>
+        </div>
+        <div class="sidebar-footer-actions">
+          <button type="button" class="footer-action-btn footer-action-btn-full" id="themeToggle" title="切换深浅色模式">
+            <span class="footer-action-icon"><i data-lucide="moon" class="icon"></i></span>
+            <span class="theme-label">深色模式</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 系统介绍 -->
+      <section id="viewIntro" class="view">
+        <header class="page-header">
+          <div class="page-header-row">
+            <h1>系统介绍</h1>
+            <span class="app-version-badge">v{{ app_version }}</span>
+          </div>
+          <p class="subtitle">{{ app_name }} — 基于业务场景的软硬件选型与项目结构生成平台</p>
+        </header>
+        <div class="intro-card">
+          <p>本系统基于 <strong>LangChain Agent</strong> 与大模型 API，面向真实业务场景提供一站式方案生成：</p>
+          <ul class="intro-list">
+            <li><i data-lucide="file-text" class="icon"></i><span>支持表单填写或上传业务文档（txt/md/pdf/doc 等）</span></li>
+            <li><i data-lucide="scan-search" class="icon"></i><span>自动解析非结构化文本为结构化业务表单</span></li>
+            <li><i data-lucide="layers" class="icon"></i><span>生成技术选型表与技术架构图</span></li>
+            <li><i data-lucide="server" class="icon"></i><span>推荐硬件配置方案并提供多维度可视化分析</span></li>
+            <li><i data-lucide="folder-tree" class="icon"></i><span>输出完整项目目录结构，并支持写入本地工作空间</span></li>
+          </ul>
+          <h3>技术架构</h3>
+          <ul>
+            <li>本地 Web 应用（Flask），突破浏览器沙盒限制</li>
+            <li>LangChain Agent 框架驱动大模型分析</li>
+            <li>默认接入 Qwen3.7-Plus 大模型，支持切换其他有免费额度的模型</li>
+          </ul>
+        </div>
+        <div class="intro-card author-card-wrap">
+          <h3 class="intro-section-title"><i data-lucide="user-round" class="icon"></i> 作者信息</h3>
+          <div class="author-card">
+            <div class="author-avatar author-avatar-img">
+              <img src="{{ url_for('static', filename=author.avatar) }}" alt="{{ author.name }}">
+            </div>
+            <div class="author-body">
+              <div class="author-name">{{ author.name }}</div>
+              <div class="author-role">{{ author.role }}</div>
+              {% if author.motto %}
+              <p class="author-motto"><i data-lucide="quote" class="icon"></i><span>{{ author.motto }}</span></p>
+              {% endif %}
+              <p class="author-bio">{{ author.bio }}</p>
+              <ul class="author-contact">
+                {% if author.email %}
+                <li><i data-lucide="mail" class="icon"></i><span><a href="mailto:{{ author.email }}">{{ author.email }}</a></span></li>
+                {% endif %}
+                {% if author.github %}
+                <li><i data-lucide="github" class="icon"></i><span><a href="https://github.com/{{ author.github }}" target="_blank" rel="noopener noreferrer">GitHub：{{ author.github }}</a></span></li>
+                {% endif %}
+                {% if author.phone %}
+                <li><i data-lucide="phone" class="icon"></i><span>{{ author.phone }}</span></li>
+                {% endif %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 新建任务：表单 -->
+      <section id="viewHome" class="view active">
+        <header class="page-header">
+          <h1>{{ app_name }}</h1>
+          <p class="subtitle">输入业务需求，AI 自动完成技术选型、硬件推荐与项目结构规划</p>
+        </header>
+
+        <div class="form-card">
+          <div class="form-tabs">
+            <button class="tab-btn active" data-tab="form">表单输入</button>
+            <button class="tab-btn" data-tab="file">文件上传</button>
+          </div>
+
+          <div class="model-select">
+            <label for="modelSelect">大模型选择</label>
+            <select id="modelSelect">
+              {% for m in models %}
+              <option value="{{ m.id }}" {% if m.id == default_model %}selected{% endif %}>{{ m.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- 表单模式 -->
+          <form id="businessForm" class="tab-panel active" data-panel="form">
+            <div class="form-grid">
+              {% for field in form_fields %}
+              <div class="form-group {% if field.type == 'textarea' %}full-width{% endif %}">
+                <label>
+                  {{ field.label }}
+                  {% if field.required %}<span class="required">*</span>{% endif %}
+                </label>
+                {% if field.type == 'textarea' %}
+                <textarea name="{{ field.key }}" rows="3" {% if field.required %}required{% endif %}></textarea>
+                {% elif field.type == 'select' %}
+                <select name="{{ field.key }}">
+                  <option value="">请选择</option>
+                  {% for opt in field.options %}
+                  <option value="{{ opt }}">{{ opt }}</option>
+                  {% endfor %}
+                </select>
+                {% else %}
+                <input type="text" name="{{ field.key }}" {% if field.required %}required{% endif %}>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">开始分析</button>
+              <button type="button" class="btn-secondary" id="clearFormBtn">清除</button>
+            </div>
+          </form>
+
+          <!-- 文件上传模式 -->
+          <div class="tab-panel" data-panel="file">
+            <div class="upload-zone" id="uploadZone">
+              <input type="file" id="fileInput" accept=".txt,.md,.doc,.docx,.pdf,.json,.csv" hidden>
+              <div class="upload-icon"><i data-lucide="upload" class="icon"></i></div>
+              <p>点击或拖拽上传业务文档</p>
+              <p class="upload-hint">支持 txt、md、doc、docx、pdf、json、csv</p>
+              <p class="file-name" id="fileName"></p>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-primary" id="fileAnalyzeBtn" disabled>解析并分析</button>
+              <button type="button" class="btn-secondary" id="clearFileBtn" disabled>清除</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 分析中 -->
+      <section id="viewLoading" class="view">
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <h2 class="loading-task-title" id="loadingTaskTitle"></h2>
+          <p class="loading-task-model" id="loadingTaskModel"></p>
+          <p class="loading-task-hint">正在分析中，请等待</p>
+        </div>
+      </section>
+
+      <!-- 结果页 -->
+      <section id="viewResult" class="view">
+        <header class="result-header">
+          <div class="result-title-wrap">
+            <h2 id="resultTitle">分析结果</h2>
+            <span class="result-meta" id="resultMeta"></span>
+          </div>
+          <div class="result-tabs">
+            <button class="result-tab active" data-module="tech">技术选型</button>
+            <button class="result-tab" data-module="hardware">硬件推荐</button>
+            <button class="result-tab" data-module="structure">项目结构</button>
+          </div>
+        </header>
+
+        <!-- 模块1：技术选型 -->
+        <div class="result-module active" data-module="tech">
+          <h3 class="module-title"><i data-lucide="layers" class="icon"></i> 技术选型</h3>
+          <div class="module-content two-col">
+            <div class="table-wrap">
+              <table id="techStackTable">
+                <thead>
+                  <tr>
+                    <th>分类</th><th>技术</th><th>版本</th><th>优先级</th><th>选型理由</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="diagram-wrap">
+              <div class="diagram-header">
+                <h4>技术架构图</h4>
+                <button type="button" class="btn-diagram-fs" data-diagram="archDiagram" data-title="技术架构图" title="全屏查看" disabled>
+                  <i data-lucide="maximize-2" class="icon"></i>
+                </button>
+              </div>
+              <div class="mermaid" id="archDiagram"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模块2：硬件推荐 -->
+        <div class="result-module" data-module="hardware">
+          <h3 class="module-title"><i data-lucide="server" class="icon"></i> 硬件推荐方案</h3>
+          <p class="hw-summary" id="hwSummary"></p>
+          <div class="table-wrap">
+            <table id="hardwareTable">
+              <thead>
+                <tr>
+                  <th>硬件名称</th><th>规格配置</th><th>数量</th><th>单价</th><th>总价</th><th>选型理由</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="hw-charts" id="hwCharts"></div>
+        </div>
+
+        <!-- 模块3：项目结构 -->
+        <div class="result-module" data-module="structure">
+          <div class="structure-layout">
+            <!-- 左侧：项目结构生成（白色） -->
+            <div class="structure-panel structure-panel-white">
+              <h3 class="structure-panel-title"><i data-lucide="folder-tree" class="icon"></i> 项目结构生成</h3>
+              <p class="structure-summary" id="structureSummary"></p>
+              <div class="tree-wrap">
+                <h4>目录结构</h4>
+                <div id="projectTree" class="project-tree"></div>
+              </div>
+              <div class="diagram-wrap">
+                <div class="diagram-header">
+                  <h4>结构关系图</h4>
+                  <button type="button" class="btn-diagram-fs" data-diagram="structureDiagram" data-title="结构关系图" title="全屏查看" disabled>
+                    <i data-lucide="maximize-2" class="icon"></i>
+                  </button>
+                </div>
+                <div class="mermaid" id="structureDiagram"></div>
+              </div>
+            </div>
+
+            <!-- 右侧：资源管理器 -->
+            <div class="structure-panel structure-panel-dark">
+              <div class="workspace-sync">
+                <div class="sync-header">
+                  <div class="sync-header-left">
+                    <span class="sync-title">本地资源管理器</span>
+                    <span class="workspace-hint">选择本地文件夹作为工作空间，下方实时同步显示目录内容</span>
+                  </div>
+                  <div class="sync-status">
+                    <button type="button" class="btn-sync-refresh" id="syncRefreshBtn" title="刷新" disabled>
+                      <i data-lucide="refresh-cw" class="icon"></i>
+                    </button>
+                    <span class="sync-time" id="syncTime">未选择</span>
+                  </div>
+                </div>
+                <div class="explorer-top-bar">
+                  <div class="workspace-row">
+                    <input type="text" id="workspacePath" class="workspace-input" placeholder="尚未选择工作空间" readonly>
+                    <button type="button" class="btn-explorer" id="selectWorkspaceBtn">选择工作空间</button>
+                    <button type="button" class="btn-explorer primary" id="writeProjectBtn" disabled>写入项目结构</button>
+                    <span class="write-status" id="writeStatus"></span>
+                  </div>
+                </div>
+                <div class="sync-toolbar" id="syncToolbar" hidden>
+                  <button type="button" class="btn-mini" data-action="mkfile" data-parent="">新建文件</button>
+                  <button type="button" class="btn-mini" data-action="mkdir" data-parent="">新建文件夹</button>
+                  <button type="button" class="btn-mini" data-action="select-all" id="selectAllBtn">选择全部</button>
+                  <button type="button" class="btn-mini" data-action="toggle-expand" id="toggleExpandBtn">全部展开</button>
+                </div>
+                <div class="local-folder-tree" id="localFolderTree">
+                  <p class="sync-placeholder">请先选择工作空间文件夹</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 历史列表页 -->
+      <section id="viewHistory" class="view">
+        <header class="page-header">
+          <h2>任务历史</h2>
+        </header>
+        <div class="history-full-list" id="historyFullList"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="diagram-fs-overlay" id="diagramFullscreen" hidden>
+    <div class="diagram-fs-toolbar">
+      <h3 class="diagram-fs-title" id="diagramFsTitle">图表</h3>
+      <div class="diagram-fs-controls">
+        <button type="button" class="diagram-fs-btn" id="diagramFsZoomOut" title="缩小">
+          <i data-lucide="zoom-out" class="icon"></i>
+        </button>
+        <span class="diagram-fs-zoom" id="diagramFsZoomLevel">100%</span>
+        <button type="button" class="diagram-fs-btn" id="diagramFsZoomIn" title="放大">
+          <i data-lucide="zoom-in" class="icon"></i>
+        </button>
+        <button type="button" class="diagram-fs-btn" id="diagramFsReset" title="重置视图">
+          <i data-lucide="refresh-cw" class="icon"></i>
+          <span>重置</span>
+        </button>
+        <button type="button" class="diagram-fs-btn diagram-fs-btn-primary" id="diagramFsDownload" title="下载 PNG">
+          <i data-lucide="download" class="icon"></i>
+          <span>下载 PNG</span>
+        </button>
+        <button type="button" class="diagram-fs-btn" id="diagramFsClose" title="关闭">
+          <i data-lucide="x" class="icon"></i>
+          <span>关闭</span>
+        </button>
+      </div>
+    </div>
+    <div class="diagram-fs-viewport" id="diagramFsViewport">
+      <div class="diagram-fs-stage" id="diagramFsStage"></div>
+    </div>
+    <p class="diagram-fs-hint">滚轮缩放 · 拖拽平移 · Esc 关闭</p>
+  </div>
+
+  <div class="modal-overlay" id="healthModal" hidden>
+    <div class="modal-card modal-card-wide" role="dialog" aria-labelledby="healthModalTitle">
+      <div class="modal-header">
+        <h3 id="healthModalTitle"><i data-lucide="activity" class="icon"></i> 健康检查</h3>
+        <button type="button" class="modal-close" id="healthModalClose" title="关闭">
+          <i data-lucide="x" class="icon"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="healthModalBody">
+        <p class="modal-hint">正在检查...</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" id="healthModalOkBtn">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="apiKeyModal" hidden>
+    <div class="modal-card" role="dialog" aria-labelledby="apiKeyModalTitle">
+      <div class="modal-header">
+        <h3 id="apiKeyModalTitle"><i data-lucide="key-round" class="icon"></i> API Key 配置</h3>
+        <button type="button" class="modal-close" id="apiKeyModalClose" title="关闭">
+          <i data-lucide="x" class="icon"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint">通义千问 DashScope API Key，保存后写入本地 <code>.env</code> 并立即生效。</p>
+        <p class="api-key-status" id="apiKeyStatus"></p>
+        <label class="modal-label" for="apiKeyInput">API Key</label>
+        <input type="password" id="apiKeyInput" class="modal-input" placeholder="sk-..." autocomplete="off">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="apiKeyCancelBtn">取消</button>
+        <button type="button" class="btn-primary" id="apiKeySaveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.FORM_FIELDS = {{ form_fields | tojson }};
+    window.DEFAULT_MODEL = "{{ default_model }}";
+  </script>
+  <script src="{{ url_for('static', filename='js/file-icons.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/workspace-explorer.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

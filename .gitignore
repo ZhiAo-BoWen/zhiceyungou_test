@@ -1,0 +1,49 @@
+# ---- 本地覆盖配置（体验服 .env 可提交，本地覆盖仍忽略）----
+.env.local
+.env.*.local
+*.key
+secrets.json
+credentials.json
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+venv/
+.venv/
+env/
+ENV/
+
+# ---- 本地运行时数据 ----
+data/uploads/*
+data/tasks/*
+!data/uploads/.gitkeep
+!data/tasks/.gitkeep
+
+# ---- IDE / 系统 ----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 日志 ----
+*.log

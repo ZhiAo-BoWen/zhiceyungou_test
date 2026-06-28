@@ -566,4 +566,4 @@ def workspace_download():
 
 
 if __name__ == "__main__":
-    app.run(host=config.FLASK_HOST, port=config.FLASK_PORT, debug=True)
+    app.run(host=config.FLASK_HOST, port=config.FLASK_PORT, debug=False)

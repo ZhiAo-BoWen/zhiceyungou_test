@@ -26,6 +26,11 @@ WorkingDirectory=/home/admin/zhiceyungou_test
 # 加载 .env（前缀 - 表示文件不存在时不报错）
 EnvironmentFile=-/home/admin/zhiceyungou_test/.env
 
+# systemd 干净环境：显式指定 HOME 与 conda
+Environment=HOME=/home/admin
+Environment=CONDA_SH=/opt/miniconda3/etc/profile.d/conda.sh
+Environment=CONDA_ENV=agent
+
 # 覆盖 .env：nginx 反代场景下 Flask 只监听本机
 Environment=DEPLOY_MODE=server
 Environment=FLASK_HOST=127.0.0.1

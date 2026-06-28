@@ -1,8 +1,8 @@
 # 智策云构 systemd 单元文件
 #
-# 安装（将 APP_ROOT 改为项目实际绝对路径，例如 /home/admin/zhiceyungou_test）：
-#   sudo sed "s|/home/admin/zhiceyungou_test|/你的/项目/路径|g" deploy/zhiceyungou.service \
-#     | sudo tee /etc/systemd/system/zhiceyungou.service
+# 安装（默认路径 /home/admin/zhiceyungou_test；若不同请先改本文件内路径再 cp）：
+#   cd /home/admin/zhiceyungou_test
+#   sudo cp deploy/zhiceyungou.service /etc/systemd/system/zhiceyungou.service
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now zhiceyungou
 #

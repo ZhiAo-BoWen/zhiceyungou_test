@@ -283,6 +283,12 @@ class WorkspaceExplorer {
       { label: '新建文件', action: () => this.createItem('mkfile', parent) },
       { label: '新建文件夹', action: () => this.createItem('mkdir', parent) },
     ];
+    if (window.IS_SERVER_MODE && type === 'folder' && typeof window.setServerWorkspaceFolder === 'function') {
+      items.unshift({
+        label: '设为工作目录',
+        action: () => window.setServerWorkspaceFolder(path),
+      });
+    }
     if (count === 1) {
       items.push({ label: '重命名', action: () => this.renameItem(path, name) });
     }
@@ -315,7 +321,7 @@ class WorkspaceExplorer {
     try {
       await this.onRequest(endpoint, { parent, name: name.trim() });
       if (parent) this.expanded.add(parent);
-    } catch (err) { alert(err.message); }
+    } catch (err) { showToast(err.message, 'error'); }
   }
 
   async renameItem(relPath, oldName) {
@@ -329,7 +335,7 @@ class WorkspaceExplorer {
         parts[parts.length - 1] = newName.trim();
         this.selectedPaths.add(parts.join('/'));
       }
-    } catch (err) { alert(err.message); }
+    } catch (err) { showToast(err.message, 'error'); }
   }
 
   async deleteSelected() {
@@ -348,7 +354,7 @@ class WorkspaceExplorer {
       this.selectedPaths.clear();
       await this.onRequest(null, {}, true);
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, 'error');
     }
   }
 

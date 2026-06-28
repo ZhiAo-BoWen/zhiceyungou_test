@@ -4,14 +4,24 @@ from pathlib import Path
 
 def _resolve_in_workspace(workspace: str, rel_path: str = "") -> tuple[Path, Path]:
     root = Path(workspace).resolve()
+    root = _assert_root(root)
     if not root.exists() or not root.is_dir():
         raise ValueError("工作空间路径无效")
 
     rel = rel_path.replace("\\", "/").strip("/")
-    target = (root / rel).resolve() if rel else root
+    target = root if not rel else _assert_in_root(root, (root / rel).resolve())
+    return root, target
+
+
+def _assert_root(root: Path) -> Path:
+    resolved = root.resolve()
+    return resolved
+
+
+def _assert_in_root(root: Path, target: Path) -> Path:
     if target != root and root not in target.parents:
         raise ValueError("非法路径，不能访问工作空间之外")
-    return root, target
+    return target
 
 
 def create_folder(workspace: str, parent: str, name: str) -> str:

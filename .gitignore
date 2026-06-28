@@ -1,7 +1,7 @@
-# ---- 本地覆盖配置（体验服 .env 可提交，本地覆盖仍忽略）----
+# ---- 环境配置（含 API Key / 管理员密码，勿提交）----
+.env
 .env.local
 .env.*.local
-*.key
 secrets.json
 credentials.json
 
@@ -29,11 +29,23 @@ venv/
 env/
 ENV/
 
-# ---- 本地运行时数据 ----
+# ---- 运行时用户数据（任务 / 配额 / 日志 / 工作空间 / 上传）----
 data/uploads/*
 data/tasks/*
+data/quota/*
+data/workspaces/*
+!data/.gitkeep
 !data/uploads/.gitkeep
 !data/tasks/.gitkeep
+!data/quota/.gitkeep
+!data/workspaces/.gitkeep
+
+# ---- SSL 证书与私钥 ----
+ssl/
+*.pem
+*.key
+*.crt
+*.csr
 
 # ---- IDE / 系统 ----
 .idea/
@@ -47,3 +59,4 @@ desktop.ini
 
 # ---- 日志 ----
 *.log
+logs/

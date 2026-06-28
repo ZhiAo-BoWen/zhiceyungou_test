@@ -1,0 +1,29 @@
+# HTTP → 跳转 HTTPS（本地测试可选，不需要可删此 server 块）
+server {
+    listen 80;
+    server_name zhiao-bowen.site;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name zhiao-bowen.site;
+
+    # 证书路径：改成 mkcert 实际生成的文件名
+    ssl_certificate     /home/zhu/ssl/zhiceyungou/127.0.0.1+2.pem;
+    ssl_certificate_key /home/zhu/ssl/zhiceyungou/127.0.0.1+2-key.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+
+    client_max_body_size 20m;
+
+    # 全部反代到 Flask（含 /static/，避免 home 目录权限 403）
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

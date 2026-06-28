@@ -67,6 +67,7 @@ def create_task(
     model: str,
     source: str = "form",
     upload_path: str = "",
+    client_ip: str = "",
 ) -> dict[str, Any]:
     task_id = str(uuid.uuid4())[:8]
     title = form_data.get("project_name") or "未命名项目"
@@ -83,6 +84,8 @@ def create_task(
         "error": "",
         "workspace_path": "",
         "upload_path": upload_path,
+        "client_ip": client_ip,
+        "quota_consumed": False,
     }
     return _write_task(task)
 
@@ -138,4 +141,12 @@ def update_task_workspace(task_id: str, workspace_path: str) -> dict[str, Any] |
     if not task:
         return None
     task["workspace_path"] = workspace_path
+    return _write_task(task)
+
+
+def mark_quota_consumed(task_id: str) -> dict[str, Any] | None:
+    task = get_task(task_id)
+    if not task:
+        return None
+    task["quota_consumed"] = True
     return _write_task(task)

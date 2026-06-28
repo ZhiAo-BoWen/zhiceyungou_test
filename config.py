@@ -12,6 +12,13 @@ DASHSCOPE_BASE_URL = os.getenv(
 )
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "qwen3.7-plus")
 SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+DEFAULT_IP_QUOTA = int(os.getenv("DEFAULT_IP_QUOTA", "2"))
+DEPLOY_MODE = os.getenv("DEPLOY_MODE", "local").strip().lower()
+IS_SERVER_MODE = DEPLOY_MODE == "server"
+IP_WORKSPACE_QUOTA_BYTES = int(os.getenv("IP_WORKSPACE_QUOTA_BYTES", str(10 * 1024 * 1024)))
+FLASK_HOST = os.getenv("FLASK_HOST", "0.0.0.0" if IS_SERVER_MODE else "127.0.0.1")
+FLASK_PORT = int(os.getenv("FLASK_PORT", "5000"))
 
 # 产品品牌
 APP_NAME = "智策云构"
@@ -36,10 +43,14 @@ AUTHOR_INFO = {
 }
 
 DATA_DIR = BASE_DIR / "data"
+EXAMPLES_DIR = BASE_DIR / "examples"
+DEFAULT_EXAMPLE_FILE = "业务需求示例_智慧仓储.txt"
 TASKS_DIR = DATA_DIR / "tasks"
 UPLOADS_DIR = DATA_DIR / "uploads"
+QUOTA_DIR = DATA_DIR / "quota"
+WORKSPACES_DIR = DATA_DIR / "workspaces"
 
-for directory in (DATA_DIR, TASKS_DIR, UPLOADS_DIR):
+for directory in (DATA_DIR, TASKS_DIR, UPLOADS_DIR, QUOTA_DIR, WORKSPACES_DIR):
     directory.mkdir(parents=True, exist_ok=True)
 
 AVAILABLE_MODELS = [

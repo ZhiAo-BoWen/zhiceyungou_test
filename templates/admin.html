@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ app_name }} · 后台管理</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+  <script>
+    (function () {
+      var t = localStorage.getItem('app-theme');
+      document.documentElement.setAttribute('data-theme', (t === 'dark' || t === 'light') ? t : 'light');
+    })();
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+  <div class="admin-layout">
+    <header class="admin-header">
+      <div class="admin-header-left">
+        <a href="/" class="admin-back-link"><i data-lucide="arrow-left" class="icon"></i> 返回首页</a>
+        <h1><i data-lucide="shield-check" class="icon"></i> 后台管理</h1>
+        <span class="app-version-badge">v{{ app_version }}</span>
+      </div>
+      <button type="button" class="btn-secondary" id="adminLogoutBtn" hidden>退出登录</button>
+    </header>
+
+    <section class="admin-login-card" id="adminLoginSection">
+      <h2>管理员登录</h2>
+      <label class="modal-label" for="adminLoginPassword">管理员密码</label>
+      <input type="password" id="adminLoginPassword" class="modal-input" placeholder="请输入密码" autocomplete="current-password">
+      <div class="admin-login-actions">
+        <button type="button" class="btn-primary" id="adminLoginBtn">登录</button>
+      </div>
+      <p class="admin-error" id="adminLoginError" hidden></p>
+    </section>
+
+    <main class="admin-main" id="adminMainSection" hidden>
+      <nav class="admin-tabs">
+        <button type="button" class="admin-tab active" data-tab="password">密码修改</button>
+        <button type="button" class="admin-tab" data-tab="users">登录用户</button>
+        <button type="button" class="admin-tab" data-tab="logs">日志记录</button>
+        <button type="button" class="admin-tab" data-tab="applications">体验申请</button>
+      </nav>
+
+      <section class="admin-panel active" data-panel="password">
+        <div class="admin-card">
+          <h3>修改管理员密码</h3>
+          <p class="admin-hint">修改后将写入 <code>.env</code> 并立即生效。</p>
+          <div class="admin-form-grid">
+            <div class="form-group">
+              <label for="currentAdminPassword">当前密码</label>
+              <input type="password" id="currentAdminPassword" class="modal-input" autocomplete="current-password">
+            </div>
+            <div class="form-group">
+              <label for="newAdminPassword">新密码</label>
+              <input type="password" id="newAdminPassword" class="modal-input" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label for="confirmAdminPassword">确认新密码</label>
+              <input type="password" id="confirmAdminPassword" class="modal-input" autocomplete="new-password">
+            </div>
+          </div>
+          <button type="button" class="btn-primary" id="changePasswordBtn">保存新密码</button>
+          <p class="form-inline-error" id="adminPasswordError" hidden></p>
+          <p class="form-inline-success" id="adminPasswordSuccess" hidden></p>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-panel="users">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3>登录用户管理</h3>
+            <button type="button" class="btn-secondary btn-mini" id="refreshUsersBtn">刷新</button>
+          </div>
+          <p class="admin-hint">基于 IP 识别用户，展示剩余体验次数与最后登录时间。</p>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="usersTable">
+              <thead>
+                <tr>
+                  <th>IP 地址</th>
+                  <th>剩余次数</th>
+                  <th>已使用</th>
+                  <th>最后登录</th>
+                  <th>首次记录</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-panel="logs">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3>日志记录</h3>
+            <div class="admin-filter-row">
+              <select id="logCategoryFilter" class="modal-input admin-filter-select">
+                <option value="">全部分类</option>
+                <option value="login">登录访问</option>
+                <option value="task">任务执行</option>
+                <option value="application">体验申请</option>
+                <option value="quota">额度变更</option>
+                <option value="workspace">工作空间</option>
+                <option value="admin">管理操作</option>
+              </select>
+              <button type="button" class="btn-secondary btn-mini" id="refreshLogsBtn">刷新</button>
+            </div>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="logsTable">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>分类</th>
+                  <th>IP</th>
+                  <th>剩余次数</th>
+                  <th>最后登录</th>
+                  <th>说明</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-panel="applications">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3>体验次数申请</h3>
+            <div class="admin-filter-row">
+              <select id="applicationStatusFilter" class="modal-input admin-filter-select">
+                <option value="">全部状态</option>
+                <option value="pending">待审核</option>
+                <option value="approved">已通过</option>
+                <option value="rejected">已拒绝</option>
+              </select>
+              <button type="button" class="btn-secondary btn-mini" id="refreshApplicationsBtn">刷新</button>
+            </div>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="applicationsTable">
+              <thead>
+                <tr>
+                  <th>提交时间</th>
+                  <th>昵称</th>
+                  <th>IP</th>
+                  <th>申请理由</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="reviewModal" hidden>
+    <div class="modal-card" role="dialog">
+      <div class="modal-header">
+        <h3 id="reviewModalTitle">处理申请</h3>
+        <button type="button" class="modal-close" id="reviewModalClose"><i data-lucide="x" class="icon"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint" id="reviewModalHint"></p>
+        <label class="modal-label" for="reviewGrantCount">批准时授予次数</label>
+        <input type="number" id="reviewGrantCount" class="modal-input" min="1" max="20" value="2">
+        <label class="modal-label" for="reviewNote">备注（可选）</label>
+        <textarea id="reviewNote" class="modal-input admin-textarea" rows="3"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="reviewRejectBtn">拒绝</button>
+        <button type="button" class="btn-primary" id="reviewApproveBtn">批准</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>

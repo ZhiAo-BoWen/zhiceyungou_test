@@ -54,15 +54,20 @@
             <span class="footer-action-icon"><i data-lucide="activity" class="icon"></i></span>
             <span>健康检查</span>
           </button>
-          <button type="button" class="footer-action-btn" id="apiKeyBtn" title="配置 API Key">
-            <span class="footer-action-icon"><i data-lucide="key-round" class="icon"></i></span>
-            <span>API Key</span>
+          <button type="button" class="footer-action-btn" id="quotaApplyBtn" title="申请体验次数">
+            <span class="footer-action-icon"><i data-lucide="ticket-plus" class="icon"></i></span>
+            <span>申请次数</span>
           </button>
         </div>
+        <p class="quota-badge" id="quotaBadge">剩余体验次数：--</p>
         <div class="sidebar-footer-actions">
-          <button type="button" class="footer-action-btn footer-action-btn-full" id="themeToggle" title="切换深浅色模式">
+          <button type="button" class="footer-action-btn" id="themeToggle" title="切换深浅色模式">
             <span class="footer-action-icon"><i data-lucide="moon" class="icon"></i></span>
             <span class="theme-label">深色模式</span>
+          </button>
+          <button type="button" class="footer-action-btn" id="adminPanelBtn" title="后台管理">
+            <span class="footer-action-icon"><i data-lucide="shield-check" class="icon"></i></span>
+            <span>后台管理</span>
           </button>
         </div>
       </div>
@@ -185,6 +190,11 @@
               <p class="upload-hint">支持 txt、md、doc、docx、pdf、json、csv</p>
               <p class="file-name" id="fileName"></p>
             </div>
+            <div class="upload-example-row">
+              <button type="button" class="btn-secondary btn-sm" id="useExampleFileBtn">
+                <i data-lucide="file-text" class="icon"></i> 使用实例文件（智慧仓储）
+              </button>
+            </div>
             <div class="form-actions">
               <button type="button" class="btn-primary" id="fileAnalyzeBtn" disabled>解析并分析</button>
               <button type="button" class="btn-secondary" id="clearFileBtn" disabled>清除</button>
@@ -287,8 +297,8 @@
               <div class="workspace-sync">
                 <div class="sync-header">
                   <div class="sync-header-left">
-                    <span class="sync-title">本地资源管理器</span>
-                    <span class="workspace-hint">选择本地文件夹作为工作空间，下方实时同步显示目录内容</span>
+                    <span class="sync-title">{% if is_server_mode %}云端资源管理器{% else %}本地资源管理器{% endif %}</span>
+                    <span class="workspace-hint" id="workspaceHint">{% if is_server_mode %}在您的主目录（10MB）内选择子文件夹，不同任务可使用不同目录{% else %}选择本地文件夹作为工作空间，下方实时同步显示目录内容{% endif %}</span>
                   </div>
                   <div class="sync-status">
                     <button type="button" class="btn-sync-refresh" id="syncRefreshBtn" title="刷新" disabled>
@@ -297,10 +307,19 @@
                     <span class="sync-time" id="syncTime">未选择</span>
                   </div>
                 </div>
+                {% if is_server_mode %}
+                <div class="workspace-quota-bar" id="workspaceQuotaBar" hidden>
+                  <div class="workspace-quota-track">
+                    <div class="workspace-quota-fill" id="workspaceQuotaFill"></div>
+                  </div>
+                  <span class="workspace-quota-text" id="workspaceQuotaText">0 MB / 10 MB</span>
+                </div>
+                {% endif %}
                 <div class="explorer-top-bar">
                   <div class="workspace-row">
-                    <input type="text" id="workspacePath" class="workspace-input" placeholder="尚未选择工作空间" readonly>
-                    <button type="button" class="btn-explorer" id="selectWorkspaceBtn">选择工作空间</button>
+                    <input type="text" id="workspacePath" class="workspace-input" placeholder="{% if is_server_mode %}请选择主目录下的文件夹{% else %}尚未选择工作空间{% endif %}" readonly>
+                    <button type="button" class="btn-explorer" id="selectWorkspaceBtn">{% if is_server_mode %}选择文件夹{% else %}选择工作空间{% endif %}</button>
+                    <button type="button" class="btn-explorer" id="downloadWorkspaceBtn" disabled title="下载当前文件夹为 ZIP">下载 ZIP</button>
                     <button type="button" class="btn-explorer primary" id="writeProjectBtn" disabled>写入项目结构</button>
                     <span class="write-status" id="writeStatus"></span>
                   </div>
@@ -312,7 +331,7 @@
                   <button type="button" class="btn-mini" data-action="toggle-expand" id="toggleExpandBtn">全部展开</button>
                 </div>
                 <div class="local-folder-tree" id="localFolderTree">
-                  <p class="sync-placeholder">请先选择工作空间文件夹</p>
+                  <p class="sync-placeholder">{% if is_server_mode %}加载您的专属工作空间…{% else %}请先选择工作空间文件夹{% endif %}</p>
                 </div>
               </div>
             </div>
@@ -378,31 +397,57 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="apiKeyModal" hidden>
-    <div class="modal-card" role="dialog" aria-labelledby="apiKeyModalTitle">
+  <div class="modal-overlay" id="quotaApplyModal" hidden>
+    <div class="modal-card" role="dialog" aria-labelledby="quotaApplyModalTitle">
       <div class="modal-header">
-        <h3 id="apiKeyModalTitle"><i data-lucide="key-round" class="icon"></i> API Key 配置</h3>
-        <button type="button" class="modal-close" id="apiKeyModalClose" title="关闭">
+        <h3 id="quotaApplyModalTitle"><i data-lucide="ticket-plus" class="icon"></i> 申请体验次数</h3>
+        <button type="button" class="modal-close" id="quotaApplyModalClose" title="关闭">
           <i data-lucide="x" class="icon"></i>
         </button>
       </div>
       <div class="modal-body">
-        <p class="modal-hint">通义千问 DashScope API Key，保存后写入本地 <code>.env</code> 并立即生效。</p>
-        <p class="api-key-status" id="apiKeyStatus"></p>
-        <label class="modal-label" for="apiKeyInput">API Key</label>
-        <input type="password" id="apiKeyInput" class="modal-input" placeholder="sk-..." autocomplete="off">
+        <p class="modal-hint">每个 IP 默认可体验 2 次任务。次数用完后，请填写昵称与申请理由，等待管理员审核。</p>
+        <p class="quota-apply-status" id="quotaApplyStatus"></p>
+        <p class="form-inline-error" id="quotaApplyError" hidden></p>
+        <label class="modal-label" for="quotaNickname">昵称 <span class="required">*</span></label>
+        <input type="text" id="quotaNickname" class="modal-input" placeholder="您的称呼或昵称" maxlength="32">
+        <label class="modal-label" for="quotaReason">申请理由 <span class="required">*</span></label>
+        <textarea id="quotaReason" class="modal-input quota-reason-input" rows="4" placeholder="请说明使用场景与申请原因" maxlength="500"></textarea>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn-secondary" id="apiKeyCancelBtn">取消</button>
-        <button type="button" class="btn-primary" id="apiKeySaveBtn">保存</button>
+        <button type="button" class="btn-secondary" id="quotaApplyCancelBtn">取消</button>
+        <button type="button" class="btn-primary" id="quotaApplySubmitBtn">提交申请</button>
       </div>
     </div>
   </div>
 
+  {% if is_server_mode %}
+  <div class="modal-overlay" id="serverFolderModal" hidden>
+    <div class="modal-card modal-card-wide" role="dialog" aria-labelledby="serverFolderModalTitle">
+      <div class="modal-header">
+        <h3 id="serverFolderModalTitle"><i data-lucide="folder-tree" class="icon"></i> 选择工作文件夹</h3>
+        <button type="button" class="modal-close" id="serverFolderModalClose" title="关闭">
+          <i data-lucide="x" class="icon"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint">仅可选择您专属主目录下的文件夹，配额按整个主目录（10MB）计算。</p>
+        <div class="server-folder-list" id="serverFolderList"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="serverFolderCancelBtn">取消</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <script>
     window.FORM_FIELDS = {{ form_fields | tojson }};
     window.DEFAULT_MODEL = "{{ default_model }}";
+    window.IS_SERVER_MODE = {{ is_server_mode | tojson }};
+    window.DEPLOY_MODE = "{{ deploy_mode }}";
   </script>
+  <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
   <script src="{{ url_for('static', filename='js/file-icons.js') }}"></script>
   <script src="{{ url_for('static', filename='js/workspace-explorer.js') }}"></script>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>

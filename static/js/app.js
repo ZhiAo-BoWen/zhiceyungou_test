@@ -49,74 +49,97 @@ document.getElementById('themeToggle')?.addEventListener('click', () => {
   applyTheme(getTheme() === 'light' ? 'dark' : 'light');
 });
 
-// ---- API Key 配置 ----
-const apiKeyModal = document.getElementById('apiKeyModal');
-const apiKeyInput = document.getElementById('apiKeyInput');
-const apiKeyStatus = document.getElementById('apiKeyStatus');
-
-async function loadApiKeyStatus() {
-  if (!apiKeyStatus) return;
-  try {
-    const res = await fetch('/api/config/api-key');
-    const data = await res.json();
-    if (data.configured) {
-      apiKeyStatus.textContent = `当前已配置：${data.masked}`;
-      apiKeyStatus.className = 'api-key-status configured';
-    } else {
-      apiKeyStatus.textContent = '当前未配置 API Key';
-      apiKeyStatus.className = 'api-key-status empty';
-    }
-  } catch {
-    apiKeyStatus.textContent = '无法读取配置状态';
-    apiKeyStatus.className = 'api-key-status empty';
-  }
-}
-
-function openApiKeyModal() {
-  if (!apiKeyModal) return;
-  apiKeyModal.hidden = false;
-  if (apiKeyInput) apiKeyInput.value = '';
-  loadApiKeyStatus();
-  refreshIcons(apiKeyModal);
-  apiKeyInput?.focus();
-}
-
-function closeApiKeyModal() {
-  if (apiKeyModal) apiKeyModal.hidden = true;
-  if (apiKeyInput) apiKeyInput.value = '';
-}
-
-document.getElementById('apiKeyBtn')?.addEventListener('click', openApiKeyModal);
-document.getElementById('apiKeyModalClose')?.addEventListener('click', closeApiKeyModal);
-document.getElementById('apiKeyCancelBtn')?.addEventListener('click', closeApiKeyModal);
-apiKeyModal?.addEventListener('click', e => {
-  if (e.target === apiKeyModal) closeApiKeyModal();
+document.getElementById('adminPanelBtn')?.addEventListener('click', () => {
+  window.open('/admin', '_blank');
 });
 
-document.getElementById('apiKeySaveBtn')?.addEventListener('click', async () => {
-  const apiKey = apiKeyInput?.value.trim();
-  if (!apiKey) {
-    alert('请输入 API Key');
+// ---- 体验次数与申请 ----
+const quotaApplyModal = document.getElementById('quotaApplyModal');
+const quotaBadge = document.getElementById('quotaBadge');
+const quotaApplyStatus = document.getElementById('quotaApplyStatus');
+const quotaApplyError = document.getElementById('quotaApplyError');
+let currentQuota = null;
+
+function showQuotaApplyError(message) {
+  if (!quotaApplyError) return;
+  quotaApplyError.textContent = message || '';
+  quotaApplyError.hidden = !message;
+}
+
+function updateQuotaBadge(quota) {
+  currentQuota = quota;
+  if (!quotaBadge || !quota) return;
+  quotaBadge.textContent = `剩余体验次数：${quota.remaining ?? 0} / ${quota.limit ?? 2}`;
+  quotaBadge.classList.toggle('quota-empty', !quota.can_submit);
+}
+
+async function loadQuotaStatus() {
+  try {
+    const res = await fetch('/api/quota/status');
+    const data = await res.json();
+    updateQuotaBadge(data);
+  } catch {
+    if (quotaBadge) quotaBadge.textContent = '剩余体验次数：--';
+  }
+}
+
+function openQuotaApplyModal() {
+  if (!quotaApplyModal) return;
+  quotaApplyModal.hidden = false;
+  showQuotaApplyError('');
+  if (quotaApplyStatus && currentQuota) {
+    quotaApplyStatus.textContent = `当前剩余 ${currentQuota.remaining ?? 0} 次体验机会`;
+    quotaApplyStatus.className = 'quota-apply-status';
+  }
+  document.getElementById('quotaNickname').value = '';
+  document.getElementById('quotaReason').value = '';
+  refreshIcons(quotaApplyModal);
+  document.getElementById('quotaNickname')?.focus();
+}
+
+function closeQuotaApplyModal() {
+  if (quotaApplyModal) quotaApplyModal.hidden = true;
+}
+
+document.getElementById('quotaApplyBtn')?.addEventListener('click', openQuotaApplyModal);
+document.getElementById('quotaApplyModalClose')?.addEventListener('click', closeQuotaApplyModal);
+document.getElementById('quotaApplyCancelBtn')?.addEventListener('click', closeQuotaApplyModal);
+quotaApplyModal?.addEventListener('click', e => {
+  if (e.target === quotaApplyModal) closeQuotaApplyModal();
+});
+
+document.getElementById('quotaApplySubmitBtn')?.addEventListener('click', async () => {
+  const nickname = document.getElementById('quotaNickname')?.value.trim();
+  const reason = document.getElementById('quotaReason')?.value.trim();
+  if (!nickname) {
+    showQuotaApplyError('请填写昵称');
     return;
   }
-  const btn = document.getElementById('apiKeySaveBtn');
+  if (!reason) {
+    showQuotaApplyError('请填写申请理由');
+    return;
+  }
+  showQuotaApplyError('');
+  const btn = document.getElementById('quotaApplySubmitBtn');
   btn.disabled = true;
   try {
-    const res = await fetch('/api/config/api-key', {
-      method: 'PUT',
+    const res = await fetch('/api/quota/apply', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api_key: apiKey }),
+      body: JSON.stringify({ nickname, reason }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || '保存失败');
-    closeApiKeyModal();
-    alert('API Key 已保存并生效');
+    if (!res.ok) throw new Error(data.error || '提交失败');
+    closeQuotaApplyModal();
+    showToast('申请已提交，请等待管理员审核', 'success');
   } catch (err) {
-    alert(err.message);
+    showQuotaApplyError(err.message);
   } finally {
     btn.disabled = false;
   }
 });
+
+loadQuotaStatus();
 
 let currentFile = null;
 let currentTask = null;
@@ -205,6 +228,7 @@ const fileInput = document.getElementById('fileInput');
 const fileName = document.getElementById('fileName');
 const fileAnalyzeBtn = document.getElementById('fileAnalyzeBtn');
 const clearFileBtn = document.getElementById('clearFileBtn');
+const useExampleFileBtn = document.getElementById('useExampleFileBtn');
 
 uploadZone.addEventListener('click', () => fileInput.click());
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
@@ -232,6 +256,27 @@ function clearFile() {
 }
 
 clearFileBtn.addEventListener('click', clearFile);
+
+useExampleFileBtn?.addEventListener('click', async e => {
+  e.stopPropagation();
+  useExampleFileBtn.disabled = true;
+  try {
+    const res = await fetch('/api/examples/default');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || '实例文件加载失败');
+    }
+    const blob = await res.blob();
+    const file = new File([blob], '业务需求示例_智慧仓储.txt', { type: 'text/plain' });
+    setFile(file);
+    showToast('已加载实例文件：智慧仓储', 'success');
+    refreshIcons(useExampleFileBtn.closest('.upload-example-row'));
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    useExampleFileBtn.disabled = false;
+  }
+});
 
 // ---- 表单清除 ----
 const businessForm = document.getElementById('businessForm');
@@ -280,6 +325,7 @@ async function runAnalysis(formData) {
     const prepRes = await fetch('/api/tasks/submit', { method: 'POST', body: formData });
     const prep = await prepRes.json().catch(() => ({}));
     if (!prepRes.ok) throw new Error(prep.error || '创建任务失败');
+    if (prep.quota) updateQuotaBadge(prep.quota);
 
     taskId = prep.task.id;
     setLoadingView({
@@ -293,6 +339,13 @@ async function runAnalysis(formData) {
     const runRes = await fetch(`/api/tasks/${taskId}/run`, { method: 'POST' });
     const data = await runRes.json().catch(() => ({}));
     if (!runRes.ok) throw new Error(data.error || '分析失败');
+    if (data.quota) updateQuotaBadge(data.quota);
+    if (data.workspace) updateServerWorkspaceUI(data.workspace);
+    if (window.IS_SERVER_MODE && data.workspace?.ready) {
+      applyWorkspace(data.task?.workspace_path || data.workspace.path, false);
+    } else if (data.task?.workspace_path) {
+      applyWorkspace(data.task.workspace_path, false);
+    }
 
     renderResult(data.task);
     await loadTaskHistory();
@@ -300,7 +353,8 @@ async function runAnalysis(formData) {
     showView('result', null, data.task.id);
   } catch (err) {
     await loadTaskHistory();
-    alert(err.message);
+    await loadQuotaStatus();
+    showToast(err.message, 'error', 4500);
     if (taskId) {
       loadHistoryFull();
       showView('history', 'history', taskId);
@@ -322,7 +376,15 @@ function renderResult(task) {
   renderHardware(result.hardware);
   renderProjectStructure(result.project_structure);
 
-  if (task.workspace_path) {
+  if (window.IS_SERVER_MODE) {
+    loadServerWorkspaceInfo().then(info => {
+      if (!info?.ready) {
+        resetWorkspace();
+        return;
+      }
+      applyWorkspace(task.workspace_path || info.path, false);
+    });
+  } else if (task.workspace_path) {
     applyWorkspace(task.workspace_path, false);
   } else {
     resetWorkspace();
@@ -736,7 +798,7 @@ document.getElementById('diagramFsZoomOut')?.addEventListener('click', () => {
 });
 
 document.getElementById('diagramFsReset')?.addEventListener('click', fitDiagramToView);
-document.getElementById('diagramFsDownload')?.addEventListener('click', () => downloadDiagramPng().catch(() => alert('PNG 导出失败')));
+document.getElementById('diagramFsDownload')?.addEventListener('click', () => downloadDiagramPng().catch(() => showToast('PNG 导出失败', 'error')));
 document.getElementById('diagramFsClose')?.addEventListener('click', closeDiagramFullscreen);
 
 document.addEventListener('keydown', e => {
@@ -748,12 +810,123 @@ document.addEventListener('keydown', e => {
 // ---- 工作空间选择与写入 ----
 const workspacePath = document.getElementById('workspacePath');
 const selectWorkspaceBtn = document.getElementById('selectWorkspaceBtn');
+const downloadWorkspaceBtn = document.getElementById('downloadWorkspaceBtn');
 const writeProjectBtn = document.getElementById('writeProjectBtn');
 const writeStatus = document.getElementById('writeStatus');
 const syncTime = document.getElementById('syncTime');
 const syncRefreshBtn = document.getElementById('syncRefreshBtn');
 const syncToolbar = document.getElementById('syncToolbar');
 const localFolderTree = document.getElementById('localFolderTree');
+const workspaceHint = document.getElementById('workspaceHint');
+const workspaceQuotaBar = document.getElementById('workspaceQuotaBar');
+const workspaceQuotaFill = document.getElementById('workspaceQuotaFill');
+const workspaceQuotaText = document.getElementById('workspaceQuotaText');
+const serverFolderModal = document.getElementById('serverFolderModal');
+const serverFolderList = document.getElementById('serverFolderList');
+let serverWorkspaceInfo = null;
+let activeSyncRoot = '';
+
+function getServerHomePath() {
+  return workspacePath?.dataset.serverHome || serverWorkspaceInfo?.home || serverWorkspaceInfo?.path || '';
+}
+
+function getActiveWorkspacePath() {
+  if (!window.IS_SERVER_MODE) return workspacePath?.value.trim() || '';
+  return workspacePath?.dataset.serverPath || getServerHomePath();
+}
+
+function formatServerWorkspaceLabel(fullPath) {
+  const home = getServerHomePath();
+  const slug = serverWorkspaceInfo?.display_name || '云端主目录';
+  if (!fullPath || fullPath === home) return `${slug} / (根目录)`;
+  if (home && fullPath.startsWith(home + '/')) {
+    return `${slug} / ${fullPath.slice(home.length + 1)}`;
+  }
+  return fullPath;
+}
+
+function joinWorkspacePath(base, rel) {
+  if (!rel) return base;
+  return `${base.replace(/\/$/, '')}/${rel.replace(/^\//, '')}`;
+}
+
+function isWorkspaceQuotaFull(info) {
+  if (!info?.ready) return false;
+  return Number(info.remaining_bytes ?? 1) <= 0;
+}
+
+function updateWorkspaceQuotaUI(info) {
+  if (!window.IS_SERVER_MODE || !info?.ready) {
+    workspaceQuotaBar?.setAttribute('hidden', '');
+    return;
+  }
+  workspaceQuotaBar?.removeAttribute('hidden');
+  const used = Number(info.used_mb ?? 0);
+  const quota = Number(info.quota_mb ?? 10);
+  const pct = quota > 0 ? Math.min(100, (used / quota) * 100) : 0;
+  if (workspaceQuotaFill) {
+    workspaceQuotaFill.style.width = `${pct}%`;
+    workspaceQuotaFill.classList.toggle('quota-full', pct >= 100);
+    workspaceQuotaFill.classList.toggle('quota-warn', pct >= 80 && pct < 100);
+  }
+  if (workspaceQuotaText) {
+    workspaceQuotaText.textContent = `${used} MB / ${quota} MB`;
+  }
+  if (syncToolbar) {
+    const full = isWorkspaceQuotaFull(info);
+    syncToolbar.querySelectorAll('[data-action="mkfile"], [data-action="mkdir"]').forEach(btn => {
+      btn.disabled = full;
+      btn.title = full ? '存储空间已满（10MB 上限）' : '';
+    });
+  }
+}
+
+function updateServerWorkspaceUI(info) {
+  serverWorkspaceInfo = info || null;
+  if (workspaceHint && info) {
+    workspaceHint.textContent = info.ready
+      ? `主目录配额 ${info.used_mb}MB / ${info.quota_mb}MB · 可为每个任务选择不同子文件夹`
+      : (info.message || workspaceHint.textContent);
+  }
+  updateWorkspaceQuotaUI(info);
+  if (!workspacePath) return;
+  if (info?.ready) {
+    workspacePath.dataset.serverHome = info.home || info.path;
+    if (!workspacePath.dataset.serverPath) {
+      workspacePath.dataset.serverPath = info.path;
+    }
+    workspacePath.value = formatServerWorkspaceLabel(getActiveWorkspacePath());
+    writeProjectBtn.disabled = !currentTask;
+    syncToolbar.hidden = false;
+    updateSyncRefreshBtn();
+  } else {
+    workspacePath.value = '';
+    workspacePath.dataset.serverPath = '';
+    workspacePath.dataset.serverHome = '';
+    writeProjectBtn.disabled = true;
+    syncToolbar.hidden = true;
+    syncTime.textContent = '尚未分配';
+    updateSyncRefreshBtn();
+  }
+}
+
+async function loadServerWorkspaceInfo() {
+  if (!window.IS_SERVER_MODE) return null;
+  try {
+    const res = await fetch('/api/workspace/info');
+    const data = await res.json();
+    updateServerWorkspaceUI(data);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+if (window.IS_SERVER_MODE) {
+  loadServerWorkspaceInfo().then(info => {
+    if (info?.ready) applyWorkspace(info.path, false);
+  });
+}
 
 const workspaceExplorer = new WorkspaceExplorer({
   container: localFolderTree,
@@ -762,11 +935,16 @@ const workspaceExplorer = new WorkspaceExplorer({
 });
 
 function updateSyncRefreshBtn() {
-  if (syncRefreshBtn) syncRefreshBtn.disabled = !workspacePath.value.trim();
+  const ready = !!getActiveWorkspacePath();
+  if (syncRefreshBtn) syncRefreshBtn.disabled = !ready;
+  if (downloadWorkspaceBtn) downloadWorkspaceBtn.disabled = !ready;
 }
 
 function resetWorkspace() {
   workspacePath.value = '';
+  workspacePath.dataset.serverPath = '';
+  workspacePath.dataset.serverHome = '';
+  activeSyncRoot = '';
   writeProjectBtn.disabled = true;
   writeStatus.textContent = '';
   writeStatus.classList.remove('error');
@@ -791,13 +969,28 @@ async function saveTaskWorkspace(path) {
 }
 
 function applyWorkspace(path, persist = true) {
-  workspacePath.value = path;
-  writeProjectBtn.disabled = false;
+  if (window.IS_SERVER_MODE) {
+    const home = getServerHomePath();
+    const target = path || home;
+    workspacePath.dataset.serverHome = home;
+    workspacePath.dataset.serverPath = target;
+    workspacePath.value = formatServerWorkspaceLabel(target);
+    if (persist && target) saveTaskWorkspace(target);
+  } else {
+    workspacePath.value = path;
+    if (persist) saveTaskWorkspace(path);
+  }
+  writeProjectBtn.disabled = !currentTask;
   syncToolbar.hidden = false;
   updateSyncRefreshBtn();
-  if (persist) saveTaskWorkspace(path);
   startWorkspaceSync();
 }
+
+window.setServerWorkspaceFolder = function (relPath) {
+  if (!window.IS_SERVER_MODE || !activeSyncRoot) return;
+  applyWorkspace(joinWorkspacePath(activeSyncRoot, relPath || ''));
+  showToast('已切换工作目录', 'success');
+};
 
 function stopWorkspaceSync() {
   if (workspaceSyncInterval) {
@@ -808,7 +1001,7 @@ function stopWorkspaceSync() {
 
 function startWorkspaceSync() {
   stopWorkspaceSync();
-  const path = workspacePath.value.trim();
+  const path = getActiveWorkspacePath();
   if (!path) return;
   syncWorkspace();
   workspaceSyncInterval = setInterval(syncWorkspace, 3000);
@@ -817,20 +1010,33 @@ function startWorkspaceSync() {
 let syncInProgress = false;
 
 async function syncWorkspace() {
-  const path = workspacePath.value.trim();
+  let path = getActiveWorkspacePath();
+  if (window.IS_SERVER_MODE && !path) {
+    const info = await loadServerWorkspaceInfo();
+    path = info?.path || '';
+    if (!path) {
+      syncTime.textContent = '尚未分配';
+      return;
+    }
+    workspacePath.dataset.serverPath = path;
+  }
   if (!path) return;
   if (syncInProgress) return;
   syncInProgress = true;
   syncRefreshBtn?.classList.add('spinning');
   try {
+    const body = window.IS_SERVER_MODE ? { workspace: path } : { path };
     const res = await fetch('/api/workspace-sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path }),
+      body: JSON.stringify(body),
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.error || '同步失败');
     renderWorkspaceSync(data);
+    if (window.IS_SERVER_MODE && data.used_mb !== undefined) {
+      updateServerWorkspaceUI(data);
+    }
   } catch (err) {
     syncTime.textContent = '同步失败';
     workspaceExplorer.showError(err.message);
@@ -845,27 +1051,42 @@ async function parseJsonResponse(res) {
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error(res.status === 404 ? '同步接口不可用，请重启服务后重试' : '服务返回异常，请稍后重试');
+    if (res.status === 404) throw new Error('接口不可用，请确认服务已更新并重启');
+    if (res.status === 502 || res.status === 504) throw new Error('网关错误：Flask 未运行或 nginx 无法连接后端');
+    if (res.status >= 500) throw new Error('服务器内部错误，请查看后端日志');
+    const hint = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+    throw new Error(hint ? `服务返回异常 (HTTP ${res.status})` : `服务返回异常 (HTTP ${res.status})，请稍后重试`);
   }
 }
 
 function renderWorkspaceSync(data) {
+  activeSyncRoot = data.path || activeSyncRoot;
   syncTime.textContent = `更新于 ${data.synced_at}`;
   workspaceExplorer.render(data);
 }
 
 async function workspaceRequest(endpoint, extra, refresh = true) {
-  const workspace = workspacePath.value.trim();
-  if (!workspace) throw new Error('请先选择工作空间');
+  const workspace = getActiveWorkspacePath();
+  if (window.IS_SERVER_MODE && !workspace) {
+    const info = await loadServerWorkspaceInfo();
+    if (!info?.path) throw new Error('工作空间尚未分配，请刷新页面后重试');
+  }
+  if (!workspace && !window.IS_SERVER_MODE) {
+    throw new Error('请先选择工作空间');
+  }
   let data = {};
   if (endpoint) {
+    const body = window.IS_SERVER_MODE ? { workspace, ...extra } : { workspace, ...extra };
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workspace, ...extra }),
+      body: JSON.stringify(body),
     });
     data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.error || '操作失败');
+    if (window.IS_SERVER_MODE && data.usage) {
+      updateServerWorkspaceUI(data.usage);
+    }
   }
   if (refresh) await syncWorkspace();
   return data;
@@ -873,8 +1094,57 @@ async function workspaceRequest(endpoint, extra, refresh = true) {
 
 syncRefreshBtn?.addEventListener('click', () => syncWorkspace());
 
-selectWorkspaceBtn.addEventListener('click', async () => {
+async function openServerFolderModal() {
+  if (!serverFolderModal || !serverFolderList) return;
+  serverFolderList.innerHTML = '<p class="modal-hint">加载中…</p>';
+  serverFolderModal.hidden = false;
+  refreshIcons(serverFolderModal);
+  try {
+    await loadServerWorkspaceInfo();
+    const res = await fetch('/api/workspace/folders');
+    const data = await parseJsonResponse(res);
+    if (!res.ok) throw new Error(data.error || '无法加载文件夹列表');
+    if (!data.ready) {
+      throw new Error(data.message || '工作空间尚未就绪，请刷新页面后重试');
+    }
+    const active = getActiveWorkspacePath();
+    serverFolderList.innerHTML = '';
+    (data.folders || []).forEach(item => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'server-folder-item' + (item.path === active ? ' active' : '');
+      btn.style.paddingLeft = `${12 + (item.depth || 0) * 16}px`;
+      btn.textContent = item.name || '(根目录)';
+      btn.title = item.rel ? item.rel : '主目录根路径';
+      btn.addEventListener('click', () => {
+        closeServerFolderModal();
+        applyWorkspace(item.path);
+        writeStatus.textContent = '已选择工作文件夹，可执行写入';
+        writeStatus.classList.remove('error');
+      });
+      serverFolderList.appendChild(btn);
+    });
+  } catch (err) {
+    serverFolderList.innerHTML = `<p class="form-inline-error">${esc(err.message)}</p>`;
+  }
+}
+
+function closeServerFolderModal() {
+  if (serverFolderModal) serverFolderModal.hidden = true;
+}
+
+document.getElementById('serverFolderModalClose')?.addEventListener('click', closeServerFolderModal);
+document.getElementById('serverFolderCancelBtn')?.addEventListener('click', closeServerFolderModal);
+serverFolderModal?.addEventListener('click', e => {
+  if (e.target === serverFolderModal) closeServerFolderModal();
+});
+
+selectWorkspaceBtn?.addEventListener('click', async () => {
   writeStatus.classList.remove('error');
+  if (window.IS_SERVER_MODE) {
+    await openServerFolderModal();
+    return;
+  }
   try {
     const res = await fetch('/api/select-workspace', { method: 'POST' });
     const data = await res.json();
@@ -891,10 +1161,68 @@ selectWorkspaceBtn.addEventListener('click', async () => {
   }
 });
 
+function parseDownloadFilename(res) {
+  const disp = res.headers.get('Content-Disposition') || '';
+  const utf8 = disp.match(/filename\*=UTF-8''([^;\s]+)/i);
+  if (utf8) return decodeURIComponent(utf8[1]);
+  const plain = disp.match(/filename="?([^";\s]+)"?/i);
+  return plain ? plain[1] : 'workspace.zip';
+}
+
+downloadWorkspaceBtn?.addEventListener('click', async () => {
+  const path = getActiveWorkspacePath();
+  if (!path) return;
+  downloadWorkspaceBtn.disabled = true;
+  const label = downloadWorkspaceBtn.textContent;
+  downloadWorkspaceBtn.textContent = '打包中…';
+  try {
+    const res = await fetch('/api/workspace/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workspace: path }),
+    });
+    if (!res.ok) {
+      let message = '下载失败';
+      try {
+        const err = await res.json();
+        message = err.error || message;
+      } catch { /* binary error body */ }
+      throw new Error(message);
+    }
+    const contentType = res.headers.get('Content-Type') || '';
+    if (!contentType.includes('zip') && !contentType.includes('octet-stream')) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || '下载失败：服务返回异常');
+    }
+    const blob = await res.blob();
+    if (!blob.size) throw new Error('下载失败：ZIP 文件为空');
+    const filename = parseDownloadFilename(res);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast(`已下载 ${filename}`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    downloadWorkspaceBtn.textContent = label;
+    updateSyncRefreshBtn();
+  }
+});
+
 writeProjectBtn.addEventListener('click', async () => {
-  const path = workspacePath.value.trim();
-  if (!path || !currentTask) return;
-  if (!confirm(`确认将项目结构写入以下目录？\n\n${path}`)) return;
+  const path = getActiveWorkspacePath();
+  if ((!path && !window.IS_SERVER_MODE) || !currentTask) return;
+  if (window.IS_SERVER_MODE && isWorkspaceQuotaFull(serverWorkspaceInfo)) {
+    writeStatus.textContent = '存储空间已满，无法写入项目结构';
+    writeStatus.classList.add('error');
+    return;
+  }
+  if (!window.IS_SERVER_MODE && !confirm(`确认将项目结构写入以下目录？\n\n${path}`)) return;
 
   writeProjectBtn.disabled = true;
   writeStatus.textContent = '';
@@ -910,7 +1238,11 @@ writeProjectBtn.addEventListener('click', async () => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '写入失败');
-    alert(`写入成功，共创建 ${data.created_count} 个文件/目录`);
+    writeStatus.textContent = `写入成功，共创建 ${data.created_count} 个文件/目录`;
+    writeStatus.classList.remove('error');
+    if (window.IS_SERVER_MODE && data.usage) {
+      updateServerWorkspaceUI(data.usage);
+    }
     syncWorkspace();
   } catch (err) {
     writeStatus.textContent = err.message;
@@ -1002,7 +1334,7 @@ async function loadTask(id) {
   const res = await fetch(`/api/tasks/${id}`);
   const task = await res.json();
   if (!res.ok) {
-    alert(task.error || '任务不存在');
+    showToast(task.error || '任务不存在', 'error');
     return;
   }
   if (task.status === 'running') {
@@ -1014,12 +1346,12 @@ async function loadTask(id) {
     return;
   }
   if (task.status === 'failed') {
-    alert(task.error || '任务分析失败');
+    showToast(task.error || '任务分析失败', 'error', 4500);
     showView('history', 'history', id);
     return;
   }
   if (!task.result) {
-    alert('任务暂无分析结果');
+    showToast('任务暂无分析结果', 'error');
     showView('history', 'history', id);
     return;
   }

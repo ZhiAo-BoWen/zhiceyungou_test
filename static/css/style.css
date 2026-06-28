@@ -454,6 +454,9 @@ body {
 .upload-icon { display: flex; justify-content: center; margin-bottom: 12px; }
 .upload-icon .icon { width: 48px; height: 48px; color: var(--primary); opacity: 0.65; }
 .upload-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.upload-example-row { display: flex; justify-content: center; margin: -8px 0 16px; }
+.upload-example-row .btn-sm { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 14px; }
+.upload-example-row .icon { width: 16px; height: 16px; }
 .file-name { margin-top: 12px; font-weight: 500; color: var(--primary); }
 
 /* 加载 */
@@ -731,6 +734,37 @@ tr:hover td { background: var(--table-row-hover); }
 .sync-header .workspace-hint {
   color: var(--explorer-text-muted); font-size: 11px; line-height: 1.4;
 }
+.workspace-quota-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px 8px;
+}
+.workspace-quota-track {
+  flex: 1; height: 6px; border-radius: 3px;
+  background: var(--explorer-input-border); overflow: hidden;
+}
+.workspace-quota-fill {
+  height: 100%; width: 0; border-radius: 3px;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  transition: width 0.25s ease;
+}
+.workspace-quota-fill.quota-warn { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+.workspace-quota-fill.quota-full { background: #ef4444; }
+.workspace-quota-text {
+  font-size: 11px; color: var(--explorer-text-muted); white-space: nowrap;
+}
+.server-folder-list {
+  max-height: 320px; overflow-y: auto; margin-top: 8px;
+  border: 1px solid var(--explorer-input-border); border-radius: 6px;
+}
+.server-folder-item {
+  display: block; width: 100%; text-align: left; padding: 8px 12px;
+  border: none; border-bottom: 1px solid var(--explorer-input-border);
+  background: transparent; color: var(--explorer-text); font-size: 13px;
+  cursor: pointer;
+}
+.server-folder-item:last-child { border-bottom: none; }
+.server-folder-item:hover { background: var(--explorer-row-hover, rgba(99,102,241,0.12)); }
+.server-folder-item.active { background: rgba(99, 102, 241, 0.18); font-weight: 600; }
 .sync-time { font-size: 11px; color: var(--explorer-text-muted); font-weight: 400; white-space: nowrap; flex-shrink: 0; }
 .sync-status { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .btn-sync-refresh {
@@ -1002,3 +1036,106 @@ tr:hover td { background: var(--table-row-hover); }
 .history-card-meta .task-status { margin-left: 4px; vertical-align: middle; }
 
 .empty-state { text-align: center; padding: 60px; color: var(--text-muted); }
+
+/* 体验次数 */
+.quota-badge {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--sidebar-text);
+  background: var(--sidebar-hover-bg);
+  border: 1px solid var(--sidebar-border);
+}
+.quota-badge.quota-empty { color: #ef4444; border-color: rgba(239, 68, 68, 0.35); }
+.quota-apply-status { font-size: 13px; margin-bottom: 14px; color: var(--text-muted); }
+.quota-reason-input { min-height: 96px; resize: vertical; }
+
+/* 后台管理 */
+.admin-layout { min-height: 100vh; background: var(--bg); color: var(--text); }
+.admin-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 32px; border-bottom: 1px solid var(--border); background: var(--card-bg);
+}
+.admin-header-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.admin-header h1 {
+  display: flex; align-items: center; gap: 8px; margin: 0; font-size: 22px;
+}
+.admin-header h1 .icon { width: 22px; height: 22px; color: var(--primary); }
+.admin-back-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--text-muted); text-decoration: none; font-size: 14px;
+}
+.admin-back-link:hover { color: var(--primary); }
+.admin-login-card, .admin-main { max-width: 1100px; margin: 24px auto; padding: 0 24px 40px; }
+.admin-login-card {
+  max-width: 420px; background: var(--card-bg); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 28px; border: 1px solid var(--border);
+}
+.admin-login-card h2 { margin: 0 0 8px; font-size: 20px; }
+.admin-login-actions { margin-top: 16px; }
+.admin-error { color: #ef4444; font-size: 13px; margin-top: 12px; }
+.admin-hint { color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 16px; }
+.admin-tabs {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.admin-tab {
+  padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card-bg); color: var(--text); cursor: pointer; font-family: inherit;
+}
+.admin-tab.active, .admin-tab:hover { border-color: var(--primary); color: var(--primary); }
+.admin-panel { display: none; }
+.admin-panel.active { display: block; }
+.admin-card {
+  background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 24px; border: 1px solid var(--border);
+}
+.admin-card h3 { margin: 0 0 8px; font-size: 18px; }
+.admin-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.admin-form-grid { display: grid; gap: 14px; max-width: 420px; margin-bottom: 16px; }
+.admin-filter-row { display: flex; gap: 8px; align-items: center; }
+.admin-filter-select { width: auto; min-width: 140px; padding: 8px 10px; }
+.admin-table-wrap { overflow-x: auto; margin-top: 12px; }
+.admin-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.admin-table th, .admin-table td {
+  padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top;
+}
+.admin-table th { background: var(--table-header-bg); white-space: nowrap; }
+.admin-empty { text-align: center; color: var(--text-muted); }
+.admin-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  background: var(--surface-accent); color: var(--primary); font-size: 12px;
+}
+.admin-status-pending { color: #d97706; }
+.admin-status-approved { color: var(--success); }
+.admin-status-rejected { color: #ef4444; }
+.admin-reason-cell { max-width: 280px; white-space: pre-wrap; }
+.admin-muted { color: var(--text-muted); font-size: 12px; }
+.admin-textarea { min-height: 88px; resize: vertical; }
+.btn-mini { padding: 6px 12px; font-size: 12px; }
+
+/* Toast 提示 */
+.toast-root {
+  position: fixed; top: 20px; right: 20px; z-index: 20000;
+  display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+}
+.toast {
+  min-width: 220px; max-width: 360px; padding: 12px 16px;
+  border-radius: 8px; font-size: 13px; line-height: 1.5;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  opacity: 0; transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  background: var(--card-bg); color: var(--text); border: 1px solid var(--border);
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-success { border-color: rgba(34, 197, 94, 0.45); color: var(--success); }
+.toast-error { border-color: rgba(239, 68, 68, 0.45); color: #ef4444; }
+.toast-info { border-color: rgba(79, 110, 247, 0.35); color: var(--primary); }
+.form-inline-error { font-size: 13px; color: #ef4444; margin: 0 0 12px; }
+.form-inline-success { font-size: 13px; color: var(--success); margin: 0 0 12px; }

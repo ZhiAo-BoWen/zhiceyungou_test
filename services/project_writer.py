@@ -1,6 +1,9 @@
 from pathlib import Path
 from typing import Any
 
+import config
+from services.ip_workspace import assert_can_write, estimate_tree_write_bytes, _assert_under_workspaces
+
 
 def _write_node(base: Path, node: dict[str, Any]) -> list[str]:
     created: list[str] = []
@@ -26,14 +29,21 @@ def _write_node(base: Path, node: dict[str, Any]) -> list[str]:
     return created
 
 
-def write_project_structure(workspace: str, tree: list[dict[str, Any]]) -> dict[str, Any]:
+def write_project_structure(
+    workspace: str, tree: list[dict[str, Any]], *, client_ip: str | None = None
+) -> dict[str, Any]:
     root = Path(workspace).resolve()
+    if config.IS_SERVER_MODE:
+        root = _assert_under_workspaces(root)
     if not root.exists():
         raise ValueError("工作空间路径不存在")
     if not root.is_dir():
         raise ValueError("工作空间必须是文件夹")
     if not tree:
         raise ValueError("项目结构为空")
+
+    if config.IS_SERVER_MODE:
+        assert_can_write(str(root), estimate_tree_write_bytes(tree), ip=client_ip)
 
     created = []
     for node in tree:

@@ -1,0 +1,44 @@
+# 智策云构 systemd 单元文件
+#
+# 安装（将 APP_ROOT 改为项目实际绝对路径，例如 /home/admin/zhiceyungou_test）：
+#   sudo sed "s|/home/admin/zhiceyungou_test|/你的/项目/路径|g" deploy/zhiceyungou.service \
+#     | sudo tee /etc/systemd/system/zhiceyungou.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now zhiceyungou
+#
+# 常用命令：
+#   sudo systemctl status zhiceyungou
+#   sudo journalctl -u zhiceyungou -f
+#   sudo systemctl restart zhiceyungou
+
+[Unit]
+Description=智策云构 Flask 应用
+Documentation=file:///home/admin/zhiceyungou_test/deploy/flask_app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/zhiceyungou_test
+
+# 加载 .env（前缀 - 表示文件不存在时不报错）
+EnvironmentFile=-/home/admin/zhiceyungou_test/.env
+
+# 覆盖 .env：nginx 反代场景下 Flask 只监听本机
+Environment=DEPLOY_MODE=server
+Environment=FLASK_HOST=127.0.0.1
+Environment=FLASK_PORT=5000
+
+ExecStart=/home/admin/zhiceyungou_test/deploy/start.sh
+
+Restart=on-failure
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=zhiceyungou
+
+[Install]
+WantedBy=multi-user.target

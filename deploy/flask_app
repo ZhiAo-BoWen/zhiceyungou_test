@@ -1,17 +1,10 @@
-# HTTP → 跳转 HTTPS（本地测试可选，不需要可删此 server 块）
-server {
-    listen 80;
-    server_name zhiao-bowen.site;
-    return 301 https://$host$request_uri;
-}
-
 server {
     listen 443 ssl;
     server_name zhiao-bowen.site;
 
     # 证书路径：改成 mkcert 实际生成的文件名
-    ssl_certificate     /home/zhu/ssl/zhiceyungou/127.0.0.1+2.pem;
-    ssl_certificate_key /home/zhu/ssl/zhiceyungou/127.0.0.1+2-key.pem;
+    ssl_certificate     /etc/letsencrypt/live/zhiao-bowen.site/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/zhiao-bowen.site/privkey.pem;
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;

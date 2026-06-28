@@ -1,5 +1,4 @@
-# ---- 环境配置（含 API Key / 管理员密码，勿提交）----
-.env
+# ---- 本地环境覆盖（可选，勿提交含敏感信息的本地副本）----
 .env.local
 .env.*.local
 secrets.json

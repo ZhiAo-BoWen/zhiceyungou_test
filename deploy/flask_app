@@ -2,9 +2,9 @@ server {
     listen 443 ssl;
     server_name zhiao-bowen.site;
 
-    # 证书路径：改成 mkcert 实际生成的文件名
-    ssl_certificate     /etc/letsencrypt/live/zhiao-bowen.site/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/zhiao-bowen.site/privkey.pem;
+    # ✅ 修正后的 acme.sh 证书路径
+    ssl_certificate     /etc/nginx/ssl/zhiao-bowen.site.pem;
+    ssl_certificate_key /etc/nginx/ssl/zhiao-bowen.site.key;
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;

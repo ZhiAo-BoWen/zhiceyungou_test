@@ -1,49 +1,46 @@
-# 智策云构 systemd 单元文件
-#
-# 安装（默认路径 /home/admin/zhiceyungou_test；若不同请先改本文件内路径再 cp）：
-#   cd /home/admin/zhiceyungou_test
-#   sudo cp deploy/zhiceyungou.service /etc/systemd/system/zhiceyungou.service
-#   sudo systemctl daemon-reload
-#   sudo systemctl enable --now zhiceyungou
-#
-# 常用命令：
-#   sudo systemctl status zhiceyungou
-#   sudo journalctl -u zhiceyungou -f
-#   sudo systemctl restart zhiceyungou
-
 [Unit]
+# 描述
 Description=智策云构 Flask 应用
-Documentation=file:///home/admin/zhiceyungou_test/deploy/flask_app
-After=network-online.target
+# 启动前操作
 Wants=network-online.target
+# 启动时机
+After=network-online.target
+
 
 [Service]
+# 服务类型(默认)
 Type=simple
+# 执行用户
 User=admin
 Group=admin
+# 工作空间
 WorkingDirectory=/home/admin/zhiceyungou_test
 
-# 加载 .env（前缀 - 表示文件不存在时不报错）
+# 加载 .env(前缀 - 表示文件不存在时不报错)
 EnvironmentFile=-/home/admin/zhiceyungou_test/.env
 
 # systemd 干净环境：显式指定 HOME 与 conda
 Environment=HOME=/home/admin
-Environment=CONDA_SH=/opt/miniconda3/etc/profile.d/conda.sh
-Environment=CONDA_ENV=agent
+Environment=CONDA_SH=/home/admin/miniconda3/condabin/conda
+Environment=CONDA_ENV=zhiceyungou_test
 
 # 覆盖 .env：nginx 反代场景下 Flask 只监听本机
 Environment=DEPLOY_MODE=server
 Environment=FLASK_HOST=127.0.0.1
 Environment=FLASK_PORT=5000
 
-ExecStart=/home/admin/zhiceyungou_test/deploy/start.sh
+# 启动脚本
+ExecStart=/home/admin/zhiceyungou_test/deploy/service_start.sh
 
+# 报错重启
 Restart=on-failure
 RestartSec=5
 
+# 日志存储
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=zhiceyungou
 
 [Install]
+# 开机自启
 WantedBy=multi-user.target

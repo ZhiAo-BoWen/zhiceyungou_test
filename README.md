@@ -17,8 +17,9 @@
 ## 快速启动
 
 ```bash
-# 1. 激活 conda 环境
-conda activate agent
+# 1. 安装和激活 conda 环境
+conda create --name zhiceyungou_test python=3.11
+conda activate zhiceyungou_test
 
 # 2. 安装依赖
 pip install -r requirements.txt
